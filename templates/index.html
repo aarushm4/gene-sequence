@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Gene Information</title>
+    <link rel="stylesheet" href="https://unpkg.com/ag-grid-community/styles/ag-grid.css">
+    <link rel="stylesheet" href="https://unpkg.com/ag-grid-community/styles/ag-theme-alpine.css">
+    <script src="https://unpkg.com/ag-grid-community/dist/ag-grid-community.min.noStyle.js"></script>
+</head>
+<body>
+    <h1>Gene Information Viewer</h1>
+    <form method="POST">
+        <label for="gene_name">Enter Gene Name:</label>
+        <input type="text" id="gene_name" name="gene_name" required>
+        <button type="submit">Get Info</button>
+    </form>
+    {% if error %}
+        <p>Error: {{ error }}</p>
+    {% endif %}
+    {% if gene_info %}
+        <h2>Gene Details</h2>
+        <div id="geneGrid" class="ag-theme-alpine" style="height: 200px; width: 1000px"></div>
+        <h2>Exon Locations</h2>
+        {% if plot_url %}
+        <img src="data:image/png;base64,{{ plot_url }}" alt="Exon Locations">
+        {% endif %}
+        {% if variant_plot_url %}
+        <h2>Variant Graph</h2>
+        <img src="data:image/png;base64,{{ variant_plot_url }}" alt="Variant Graph">
+        {% if selected_variant %}
+            <h3>Selected Variant</h3>
+            <p>ID: {{ selected_variant.id }}</p>
+            <p>Location: {{ selected_variant.location }}</p>
+            <p>Allele: {{ selected_variant.allele }}</p>
+            <p>Consequence: {{ selected_variant.consequence }}</p>
+        {% endif %}
+        {% endif %}
+    {% endif %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            if ({{ gene_info|tojson|safe }}) {
+                var geneData = [
+                    {headerName: "ID", field: "id"},
+                    {headerName: "Name", field: "display_name"},
+                    {headerName: "Description", field: "description"},
+                    {headerName: "Location", field: "location"},
+                    {headerName: "Strand", field: "strand"}
+                ];
+
+                var rowData = [
+                    {
+                        id: "{{ gene_info.id|default('') }}",
+                        display_name: "{{ gene_info.display_name|default('') }}",
+                        description: "{{ gene_info.description|default('') }}",
+                        location: "{{ gene_info.seq_region_name if gene_info.seq_region_name }}:{{ gene_info.start if gene_info.start }}-{{ gene_info.end if gene_info.end }}",
+                        strand: "{{ '+' if gene_info.strand == 1 else '-' if gene_info.strand == -1 else '' }}"
+                    }
+                ];
+
+                var gridOptions = {
+                    columnDefs: geneData,
+                    rowData: rowData
+                };
+
+                var gridDiv = document.querySelector('#geneGrid');
+                new agGrid.Grid(gridDiv, gridOptions);
+            }
+        });
+    </script>
+</body>
+</html>
